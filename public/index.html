@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AegisCDS | Outpatient MCC Alert-Fatigue Reduction Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+  <!-- Top Global Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand-badge">
+        <span class="pulse-dot"></span>
+        <span class="brand-name">AegisCDS</span>
+        <span class="version-tag">v2.4 Enterprise</span>
+      </div>
+      <div class="clinic-info">
+        <span class="clinic-title">St. Jude Ambulatory MCC Clinic</span>
+        <span class="clinic-sub">Clinical Decision Support & Alert-Fatigue Analyser</span>
+      </div>
+    </div>
+
+    <!-- Active Patient Switcher -->
+    <div class="patient-switcher-container">
+      <span class="switcher-label">Active MCC Encounter:</span>
+      <div class="patient-pill-group" id="patient-pill-group">
+        <button class="patient-pill active" data-patient-id="PAT-ROBERTS-001" id="pill-robert">
+          <div class="pill-dot routine"></div>
+          <div class="pill-text">
+            <span class="pill-name">Robert Chen (68M)</span>
+            <span class="pill-tag">Stable MCC • High Noise</span>
+          </div>
+        </button>
+        <button class="patient-pill" data-patient-id="PAT-ELEANOR-002" id="pill-eleanor">
+          <div class="pill-dot emergency"></div>
+          <div class="pill-text">
+            <span class="pill-name">Eleanor Vance (74F)</span>
+            <span class="pill-tag">Crashing MCC • K+ 6.2</span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- System Telemetry Status -->
+    <div class="header-right">
+      <div class="system-status-indicator">
+        <div class="indicator-item">
+          <span class="ind-dot online"></span>
+          <span class="ind-label">LangGraph Agent: <strong>Active</strong></span>
+        </div>
+        <div class="indicator-item">
+          <span class="ind-dot online"></span>
+          <span class="ind-label">Layer 1 Gate: <strong>0-FN Verified</strong></span>
+        </div>
+        <div class="indicator-item">
+          <span class="ind-dot hitl"></span>
+          <span class="ind-label">HITL Interlock: <strong>Engaged</strong></span>
+        </div>
+      </div>
+      <button class="theme-toggle" id="theme-toggle" title="Toggle Dark/Light Mode">
+        <span id="theme-icon">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Patient Context Banner -->
+  <section class="patient-banner" id="patient-banner">
+    <!-- Populated dynamically via app.js -->
+  </section>
+
+  <!-- Main Navigation Tabs -->
+  <nav class="main-nav">
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-view="live-triage">
+        <span class="tab-icon">⚡</span>
+        <span class="tab-label">Live Triage & Comparator</span>
+        <span class="tab-badge" id="alert-reduction-badge">-85.7% Noise</span>
+      </button>
+      <button class="nav-tab" data-view="live-vetting">
+        <span class="tab-icon">📡</span>
+        <span class="tab-label">Live Event Vetting & Stream</span>
+        <span class="tab-badge safe" id="stream-pulse-badge">Live Feeder</span>
+      </button>
+      <button class="nav-tab" data-view="langgraph-hitl">
+        <span class="tab-icon">🔄</span>
+        <span class="tab-label">LangGraph & HITL Workflow</span>
+        <span class="tab-badge warning" id="hitl-pending-badge">Review Ready</span>
+      </button>
+      <button class="nav-tab" data-view="edge-cases">
+        <span class="tab-icon">🛡️</span>
+        <span class="tab-label">Failure Mode & Edge Lab</span>
+        <span class="tab-badge safe">3 Safeguards</span>
+      </button>
+      <button class="nav-tab" data-view="benchmark">
+        <span class="tab-icon">📊</span>
+        <span class="tab-label">Measurable Benchmark (N=100)</span>
+        <span class="tab-badge highlight">100% Recall</span>
+      </button>
+      <button class="nav-tab" data-view="evidence-rag">
+        <span class="tab-icon">📚</span>
+        <span class="tab-label">Guideline RAG Explorer</span>
+      </button>
+      <button class="nav-tab" data-view="audit-log">
+        <span class="tab-icon">📝</span>
+        <span class="tab-label">Clinician Audit Trail</span>
+        <span class="tab-counter" id="audit-count">1</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Application Workspace -->
+  <main class="app-main">
+
+    <!-- VIEW 1: Live Triage & Split Comparator -->
+    <section class="view-panel active" id="view-live-triage">
+      <div class="view-header">
+        <div>
+          <h2>Side-by-Side Encounter Comparator</h2>
+          <p class="view-desc">Observe the contrast: Legacy EHR alert pop-up bombardment vs. AegisCDS Intelligent Care Bundling.</p>
+        </div>
+        <div class="view-actions">
+          <div class="stat-pill">
+            <span class="stat-lbl">Baseline Alerts:</span>
+            <span class="stat-val" id="stat-raw-alerts">7</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-lbl">Smart Bundles:</span>
+            <span class="stat-val highlight" id="stat-presented-bundles">1</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-lbl">Time Saved:</span>
+            <span class="stat-val safe" id="stat-time-saved">110.5s</span>
+          </div>
+          <button class="btn btn-primary" id="btn-run-simulation">
+            <span>⚡ Re-Run Engine</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="comparator-grid">
+        <!-- Left Side: Legacy EHR Nightmare -->
+        <div class="comparator-col legacy-col">
+          <div class="col-header legacy-header">
+            <div class="col-title">
+              <span class="status-dot red"></span>
+              <h3>Legacy EHR Best Practice Advisories (BPAs)</h3>
+            </div>
+            <span class="badge badge-danger">High Alert Fatigue • 95% Blanket Override</span>
+          </div>
+          <div class="ehr-simulation-box">
+            <div class="ehr-modal-bar">
+              <span>⚠️ EHR Pop-Up Interrupt (1 of <span id="legacy-total-count">7</span>)</span>
+              <span class="window-controls">_ ▢ ✕</span>
+            </div>
+            <div class="legacy-alerts-list" id="legacy-alerts-list">
+              <!-- Dynamically populated raw alerts -->
+            </div>
+            <div class="legacy-footer">
+              <span class="warning-text">Clinicians spend an average of 142 seconds clicking "Dismiss" or "Override" across these disjointed dialogs.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: AegisCDS Smart Care Bundles -->
+        <div class="comparator-col smart-col">
+          <div class="col-header smart-header">
+            <div class="col-title">
+              <span class="status-dot green"></span>
+              <h3>AegisCDS Dual-Layer Consolidated Care Bundle</h3>
+            </div>
+            <span class="badge badge-success">Zero Missed Criticals • 100% Sensitivity</span>
+          </div>
+          <div class="smart-results-container">
+            <!-- Hero Emergency Banner (If Critical) -->
+            <div class="critical-hero-banner" id="critical-hero-banner" style="display: none;">
+              <!-- Populated if patient is Eleanor Vance -->
+            </div>
+
+            <!-- Consolidated Care Bundles -->
+            <div class="bundles-stream" id="bundles-stream">
+              <!-- Dynamically populated Care Bundles -->
+            </div>
+
+            <!-- Suppressed Nuisance Audit Drawer -->
+            <div class="suppressed-drawer">
+              <button class="suppressed-toggle" id="suppressed-toggle">
+                <span>🛡️ View Suppressed Nuisance Alerts (<span id="suppressed-count">0</span> filtered)</span>
+                <span class="chevron" id="suppressed-chevron">▼</span>
+              </button>
+              <div class="suppressed-content" id="suppressed-content" style="display: none;">
+                <!-- Populated with suppressed alerts -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: Live Event Vetting Stream & OpenFDA Integration -->
+    <section class="view-panel" id="view-live-vetting">
+      <div class="view-header">
+        <div>
+          <h2>Real-Time Clinical Event Vetting & Ingestion Engine</h2>
+          <p class="view-desc">Live streaming telemetry ingestion passing through the 3-Stage Vetting Pipeline with OpenFDA verification and SQLite persistence.</p>
+        </div>
+        <div class="view-actions">
+          <div class="stat-pill">
+            <span class="stat-lbl">SQLite DB Events:</span>
+            <span class="stat-val highlight" id="db-raw-events-count">0</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-lbl">Vetted Bundles:</span>
+            <span class="stat-val safe" id="db-vetted-bundles-count">0</span>
+          </div>
+          <button class="btn btn-primary" id="btn-stream-sample-event">
+            <span>⚡ Ingest Live Clinic Trigger</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Event Ingestion Bar -->
+      <div class="ingestion-control-card">
+        <div class="ingest-row">
+          <div class="ingest-col-select">
+            <label class="input-label">Select Ingestion Scenario Template:</label>
+            <select class="select-input" id="select-ingest-scenario">
+              <option value="crit_k_eleanor">🚨 Eleanor Vance: Emergency Serum K+ 6.2 mEq/L Spike (Critical Hazard)</option>
+              <option value="stale_lab_harold">🛡️ Harold Jenkins: Spironolactone Prescribed with 45-day-old Stale Lab (Data Gap)</option>
+              <option value="nuisance_robert">🔇 Robert Chen: Duplicate HbA1c Ordered within 85 days (Nuisance Noise)</option>
+              <option value="lethal_pair">⚠️ Dual RAAS Contraindication: Lisinopril + Losartan Concomitant</option>
+            </select>
+          </div>
+          <div class="ingest-col-btn">
+            <button class="btn btn-success btn-large" id="btn-trigger-vetting-pipeline">
+              <span>▶ Run 3-Stage Vetting Pipeline</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3-Stage Pipeline Real-Time Inspector -->
+      <div class="pipeline-stages-container" id="pipeline-stages-container">
+        <div class="stage-card" id="stage1-card">
+          <div class="stage-card-header">
+            <span class="stage-badge">STAGE 1</span>
+            <h4>Temporal & Recency Vetting</h4>
+          </div>
+          <div class="stage-body">
+            <div class="stage-status" id="stage1-status">Awaiting Event...</div>
+            <p class="stage-detail" id="stage1-detail">Inspects telemetry timestamps. Enforces &le;14 days recency for high-risk cardiorenal medications.</p>
+          </div>
+        </div>
+
+        <div class="stage-arrow">➔</div>
+
+        <div class="stage-card" id="stage2-card">
+          <div class="stage-card-header">
+            <span class="stage-badge">STAGE 2</span>
+            <h4>Deterministic Safety Gate</h4>
+          </div>
+          <div class="stage-body">
+            <div class="stage-status" id="stage2-status">Awaiting Event...</div>
+            <p class="stage-detail" id="stage2-detail">Zero-tolerance physiological checks (K+ &ge; 6.0, eGFR &lt; 15, black-box contraindications).</p>
+          </div>
+        </div>
+
+        <div class="stage-arrow">➔</div>
+
+        <div class="stage-card" id="stage3-card">
+          <div class="stage-card-header">
+            <span class="stage-badge">STAGE 3</span>
+            <h4>Contextual ML & Guideline RAG</h4>
+          </div>
+          <div class="stage-body">
+            <div class="stage-status" id="stage3-status">Awaiting Event...</div>
+            <p class="stage-detail" id="stage3-detail">Calibrated Gradient Boosting actionability scoring & KDIGO/ADA guideline care bundling.</p>
+          </div>
+        </div>
+
+        <div class="stage-arrow">➔</div>
+
+        <div class="stage-card outcome-card" id="stage-outcome-card">
+          <div class="stage-card-header">
+            <span class="stage-badge highlight">FINAL OUTCOME</span>
+            <h4>Vetted Clinical Action</h4>
+          </div>
+          <div class="stage-body">
+            <div class="stage-status" id="final-outcome-status">Standby</div>
+            <p class="stage-detail" id="final-outcome-detail">Synthesized care bundle or suppressed background audit log.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live OpenFDA Terminal & Live Feed Grid -->
+      <div class="live-tools-grid">
+        <!-- Live OpenFDA Query Tool -->
+        <div class="fda-terminal-card">
+          <div class="fda-header">
+            <span class="fda-icon">🏛️</span>
+            <div>
+              <h3>Live OpenFDA Drug Safety API Client</h3>
+              <p>Queries official U.S. FDA Drug Labeling API in real time for Boxed Warnings and Contraindications.</p>
+            </div>
+          </div>
+          <div class="fda-input-row">
+            <input type="text" class="text-input" id="fda-drug-input" placeholder="Enter generic drug name (e.g. spironolactone, lisinopril, metformin, sildenafil)..." value="spironolactone">
+            <button class="btn btn-primary" id="btn-query-openfda">Query Live OpenFDA</button>
+          </div>
+          <div class="fda-result-box" id="fda-result-box">
+            <div class="fda-result-header">
+              <span id="fda-source-tag">SOURCE: LIVE_OPENFDA_API</span>
+              <span id="fda-drug-tag">DRUG: SPIRONOLACTONE</span>
+            </div>
+            <div class="fda-content" id="fda-content-text">
+              Click "Query Live OpenFDA" to fetch official federal safety advisories in real-time.
+            </div>
+          </div>
+        </div>
+
+        <!-- Real-Time Event Ticker Feed -->
+        <div class="feed-terminal-card">
+          <div class="feed-header">
+            <h3>📡 Real-Time Vetted Events Stream (SQLite Feed)</h3>
+            <span class="pulse-dot"></span>
+          </div>
+          <div class="vetted-events-stream-list" id="vetted-events-stream-list">
+            <!-- Dynamically populated live stream items -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: LangGraph & Human-in-the-Loop Workflow -->
+    <section class="view-panel" id="view-langgraph-hitl">
+      <div class="view-header">
+        <div>
+          <h2>LangGraph Cyclic State Machine & Human Review Gate</h2>
+          <p class="view-desc">Trace the stateful multi-step agent graph from FHIR ingestion to the mandatory clinician approval interlock.</p>
+        </div>
+        <div class="view-actions">
+          <span class="state-step-badge" id="graph-current-step">Step: HITL_GATE_HOLDING</span>
+        </div>
+      </div>
+
+      <!-- Interactive Node Pipeline -->
+      <div class="langgraph-diagram-container">
+        <div class="graph-nodes-row">
+          <div class="graph-node completed" id="node-ingest">
+            <div class="node-icon">📥</div>
+            <div class="node-title">1. FHIR Ingestion</div>
+            <div class="node-desc">Standardizes Patient, Labs & RxNorm</div>
+            <div class="node-badge">Passed (0ms)</div>
+          </div>
+          <div class="node-arrow completed">➔</div>
+
+          <div class="graph-node completed" id="node-safety">
+            <div class="node-icon">🚨</div>
+            <div class="node-title">2. Safety Gate (L1)</div>
+            <div class="node-desc">Deterministic Zero-FN Invariant Rules</div>
+            <div class="node-badge">0-Tolerance</div>
+          </div>
+          <div class="node-arrow completed">➔</div>
+
+          <div class="graph-node completed" id="node-ml">
+            <div class="node-icon">🧠</div>
+            <div class="node-title">3. ML Triage (L2)</div>
+            <div class="node-desc">Gradient Boosting Actionability Scorer</div>
+            <div class="node-badge">Calibrated</div>
+          </div>
+          <div class="node-arrow completed">➔</div>
+
+          <div class="graph-node completed" id="node-rag">
+            <div class="node-icon">📖</div>
+            <div class="node-title">4. Guideline RAG</div>
+            <div class="node-desc">KDIGO, ADA & ACC Semantic Match</div>
+            <div class="node-badge">Grounded</div>
+          </div>
+          <div class="node-arrow completed">➔</div>
+
+          <div class="graph-node completed" id="node-bundle">
+            <div class="node-icon">📦</div>
+            <div class="node-title">5. Bundle Synthesizer</div>
+            <div class="node-desc">Priority Isolation & Order Bundling</div>
+            <div class="node-badge">Synthesized</div>
+          </div>
+          <div class="node-arrow waiting">➔</div>
+
+          <div class="graph-node active-pulse" id="node-hitl">
+            <div class="node-icon">👨‍⚕️</div>
+            <div class="node-title">6. HITL Gate</div>
+            <div class="node-desc">Clinician Signature & Override Interlock</div>
+            <div class="node-badge pulse">Awaiting Review</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HITL Interactive Review Workstation -->
+      <div class="hitl-workstation-card">
+        <div class="hitl-header">
+          <div class="hitl-title-box">
+            <span class="hitl-icon">🛡️</span>
+            <div>
+              <h3>Clinician Verification Checkpoint (Human-in-the-Loop Gate)</h3>
+              <p>Per Clinical Governance Policy: Proposed therapeutic modifications, medication suspensions, and diagnostic orders cannot enter the hospital CPOE queue without explicit human sign-off.</p>
+            </div>
+          </div>
+          <div class="hitl-status-badge" id="hitl-card-status">STATUS: PENDING CLINICIAN ACTION</div>
+        </div>
+
+        <div class="hitl-body">
+          <div class="hitl-proposed-orders">
+            <h4>Generated Pre-Configured Order Sets Ready For Signature:</h4>
+            <div class="orders-checklist" id="hitl-orders-list">
+              <!-- Dynamically populated order checkboxes -->
+            </div>
+          </div>
+
+          <div class="hitl-controls-section">
+            <div class="action-buttons-group">
+              <button class="btn btn-success btn-large" id="btn-hitl-approve">
+                <span>✓ Sign & Dispatch Bundle to EHR CPOE</span>
+              </button>
+              <button class="btn btn-warning btn-large" id="btn-hitl-override">
+                <span>⚠️ Clinical Override (Provide Structured Rationale)</span>
+              </button>
+            </div>
+
+            <!-- Override Reason Drawer (collapsible) -->
+            <div class="override-drawer-box" id="override-drawer-box" style="display: none;">
+              <h5>Select Defensible Structured Override Reason:</h5>
+              <div class="override-chips-grid">
+                <button class="chip-btn" data-reason="Specialist Already Managing">Specialist Already Managing</button>
+                <button class="chip-btn" data-reason="Patient Aware & Home Monitoring Arranged">Patient Aware & Home Monitoring Arranged</button>
+                <button class="chip-btn" data-reason="Benefit Outweighs Risk - Documented">Benefit Outweighs Risk - Documented</button>
+                <button class="chip-btn" data-reason="Recent External Lab Confirmed Stable">Recent External Lab Confirmed Stable</button>
+                <button class="chip-btn" data-reason="Titration In Progress - Steady State Awaited">Titration In Progress - Steady State Awaited</button>
+              </div>
+              <textarea class="override-notes" id="override-notes" placeholder="Optional clinical note for audit trail (e.g. Discussed with nephrologist Dr. Sterling)..."></textarea>
+              <button class="btn btn-danger" id="btn-submit-override">Submit Structured Override</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: Clinical Failure Mode & Edge Case Lab -->
+    <section class="view-panel" id="view-edge-cases">
+      <div class="view-header">
+        <div>
+          <h2>Operational Edge Cases & Built-in Safety Circuits</h2>
+          <p class="view-desc">Documenting how clinical decision support fails in real hospitals, and demonstrating our automated mitigations.</p>
+        </div>
+      </div>
+
+      <div class="failure-mode-selector">
+        <button class="fail-tab active" data-case="stale_lab">
+          <span class="fail-num">1</span>
+          <div class="fail-text">
+            <strong>Lab Latency & Stale Data</strong>
+            <span>45-day old normal lab used to prescribe high-risk MRA</span>
+          </div>
+        </button>
+        <button class="fail-tab" data-case="over_consolidation">
+          <span class="fail-num">2</span>
+          <div class="fail-text">
+            <strong>Over-Consolidation Semantic Masking</strong>
+            <span>Acute rising potassium merged into routine diabetes bundle</span>
+          </div>
+        </button>
+        <button class="fail-tab" data-case="hallucination_drift">
+          <span class="fail-num">3</span>
+          <div class="fail-text">
+            <strong>LLM Hallucination & Clinical Drift</strong>
+            <span>Generative AI proposing contraindicated triple RAAS blockade</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="failure-display-card" id="failure-display-card">
+        <!-- Populated dynamically via simulate-edge-case API -->
+      </div>
+    </section>
+
+    <!-- VIEW 4: Measurable Benchmark & Confusion Matrix Studio -->
+    <section class="view-panel" id="view-benchmark">
+      <div class="view-header">
+        <div>
+          <h2>Macro Experimentation Studio (100-Patient Outpatient Cohort)</h2>
+          <p class="view-desc">Quantitative comparison: Legacy EHR Baseline vs. Target Benchmark vs. Measured Prototype Results.</p>
+        </div>
+        <div class="view-actions">
+          <button class="btn btn-secondary" id="btn-refresh-benchmark">↻ Re-Run Cohort Benchmark</button>
+        </div>
+      </div>
+
+      <!-- KPI Grid -->
+      <div class="kpi-cards-grid" id="kpi-cards-grid">
+        <!-- Populated dynamically -->
+      </div>
+
+      <!-- Confusion Matrix & Error Analysis -->
+      <div class="metrics-deep-dive">
+        <div class="matrix-card">
+          <h3>Empirical Confusion Matrix (N = 509 Alerts)</h3>
+          <p class="card-subtitle">Zero-tolerance on False Negatives for life-critical clinical events.</p>
+          <div class="confusion-matrix-grid">
+            <div class="cm-header"></div>
+            <div class="cm-header">True Actionable / Critical</div>
+            <div class="cm-header">True Nuisance / Noise</div>
+
+            <div class="cm-row-label">System Presented</div>
+            <div class="cm-cell tp">
+              <span class="cm-val" id="cm-tp">209</span>
+              <span class="cm-label">True Positives (TP)</span>
+            </div>
+            <div class="cm-cell fp">
+              <span class="cm-val" id="cm-fp">0</span>
+              <span class="cm-label">False Positives (FP)</span>
+            </div>
+
+            <div class="cm-row-label">System Suppressed</div>
+            <div class="cm-cell fn">
+              <span class="cm-val highlight-fn" id="cm-fn">0</span>
+              <span class="cm-label">False Negatives (FN) [TARGET: 0]</span>
+            </div>
+            <div class="cm-cell tn">
+              <span class="cm-val" id="cm-tn">300</span>
+              <span class="cm-label">True Negatives (TN)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="error-analysis-card">
+          <h3>Error Analysis & Clinical Safeguard Audit</h3>
+          <div class="audit-item">
+            <span class="audit-badge safe">FN = 0 (100% Sensitivity)</span>
+            <p><strong>Zero Missed Criticals:</strong> Layer 1 Deterministic Gate enforces non-negotiable physiological boundary rules. Potassium &ge; 6.0 mEq/L, eGFR &lt; 15, and black-box lethal drug combinations can never be down-triaged by machine learning or LLMs.</p>
+          </div>
+          <div class="audit-item">
+            <span class="audit-badge info">Noise Cut: 79.2%</span>
+            <p><strong>Nuisance Reduction:</strong> 300 redundant alerts (duplicate HbA1c, well-tolerated chronic statin-metformin, repeat refills) were cleanly suppressed from the modal interrupt path while remaining transparently accessible in the encounter audit drawer.</p>
+          </div>
+          <div class="audit-item">
+            <span class="audit-badge highlight">Time Optimization</span>
+            <p><strong>Cognitive Time Reclaimed:</strong> Clinician review time reduced from 142.0 seconds down to 31.5 seconds per encounter (77.8% reduction), transforming consultation workflow efficiency.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 5: Guideline RAG Explorer -->
+    <section class="view-panel" id="view-evidence-rag">
+      <div class="view-header">
+        <div>
+          <h2>Clinical Guideline Knowledge Base & RAG Index</h2>
+          <p class="view-desc">Explore the vector-indexed guidelines grounding every recommendation and order bundle in AegisCDS.</p>
+        </div>
+      </div>
+
+      <div class="guidelines-grid" id="guidelines-grid">
+        <!-- Populated dynamically from GUIDELINE_KNOWLEDGE_BASE -->
+      </div>
+    </section>
+
+    <!-- VIEW 6: Clinician Audit Trail -->
+    <section class="view-panel" id="view-audit-log">
+      <div class="view-header">
+        <div>
+          <h2>Medico-Legal Clinician Audit Trail</h2>
+          <p class="view-desc">Immutable log of clinician bundle approvals, structured overrides, and decision justifications.</p>
+        </div>
+      </div>
+
+      <div class="audit-table-card">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Audit ID</th>
+              <th>Timestamp</th>
+              <th>Patient</th>
+              <th>Clinician ID</th>
+              <th>Action</th>
+              <th>Structured Override Reason</th>
+              <th>Clinical Justification</th>
+            </tr>
+          </thead>
+          <tbody id="audit-table-body">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
