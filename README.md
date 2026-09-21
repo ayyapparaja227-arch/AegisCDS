@@ -1,10 +1,12 @@
 # AegisCDS — Outpatient Alert-Fatigue Analyser & Clinical Decision Support System
+### Enterprise Clinical AI & Interoperability Platform • v2.8.0-Enterprise (75% Milestone Complete)
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
+[![PyTest](https://img.shields.io/badge/Tests-14%2F14_Passed_100%25-brightgreen.svg)](https://pytest.org/)
 [![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph_1.2-purple.svg)](https://github.com/langchain-ai/langgraph)
 [![LangChain](https://img.shields.io/badge/Framework-LangChain_Core_1.6-teal.svg)](https://www.langchain.com/)
 [![Scikit-Learn](https://img.shields.io/badge/ML-Calibrated_Gradient_Boosting-orange.svg)](https://scikit-learn.org/)
-[![XGBoost](https://img.shields.io/badge/ML-XGBoost_3.4-red.svg)](https://xgboost.readthedocs.io/)
+[![ABDM](https://img.shields.io/badge/Interoperability-ABDM_Indian_FHIR_R4-blueviolet.svg)](https://abdm.gov.in/)
 [![FHIR R4](https://img.shields.io/badge/Standard-HL7_FHIR_R4-green.svg)](https://hl7.org/fhir/R4/)
 [![OpenFDA](https://img.shields.io/badge/Data-Live_OpenFDA_API-blue.svg)](https://open.fda.gov/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-lightgrey.svg)](https://opensource.org/licenses/MIT)
@@ -26,30 +28,35 @@ In busy outpatient clinics managing patients with Type 2 Diabetes, Chronic Kidne
 
 ---
 
-## 🎯 What We Built (35% Completion — Review 1)
+## 🎯 Milestone Progress & Completed Deliverables (75% Milestone — Review 2)
 
-AegisCDS is a **complete, running, end-to-end prototype** — not a slide deck or a notebook. It is a live web application serving a REST API backend with an interactive clinical workstation frontend.
+AegisCDS is a **complete, running, end-to-end platform** — with full automated testing, ML calibration under severe noise, clinician cognitive telemetry, and Indian ABDM health standard support.
 
-### Core Deliverables Completed:
+### Complete Deliverables Status (75% Milestone):
 
 | # | Deliverable | Status |
 |---|---|---|
-| 1 | FHIR R4 Patient Data Models & Schema | ✅ Complete |
-| 2 | Layer 1: Deterministic Zero-FN Safety Gate | ✅ Complete |
-| 3 | Layer 2: Calibrated ML Triage Classifier (GBDT) | ✅ Complete |
-| 4 | Clinical Guideline RAG Engine (KDIGO, ADA, ACC/AHA) | ✅ Complete |
-| 5 | Episode-Aware Alert Consolidator & Care Bundler | ✅ Complete |
-| 6 | LangGraph 6-Node State Machine with HITL Interrupt | ✅ Complete |
-| 7 | Real-Time Event Vetting Engine (3-Stage Pipeline) | ✅ Complete |
-| 8 | Live OpenFDA Drug Safety API Integration | ✅ Complete |
-| 9 | SQLite Embedded Clinical Persistent Database | ✅ Complete |
-| 10 | Synthea FHIR MCC Synthetic Patient Cohort | ✅ Complete |
-| 11 | Two Canonical Patient Journeys (Different Urgency) | ✅ Complete |
-| 12 | Three Operational Failure Mode Simulators | ✅ Complete |
-| 13 | N=100 Measurable Benchmark Experiment | ✅ Complete |
-| 14 | REST API Backend Server (Python, Port 8080) | ✅ Complete |
-| 15 | Full Interactive Web Workstation Frontend | ✅ Complete |
-| 16 | Architecture, FHIR Schema, Risk Register, User Guide | ✅ Complete |
+| 1 | FHIR R4 Patient Data Models & Schema (`models.py`) | ✅ Complete |
+| 2 | Layer 1: Deterministic Zero-FN Safety Gate (`deterministic_safety_gate.py`) | ✅ Complete |
+| 3 | Layer 2: Calibrated ML Triage Classifier (`ml_triage_classifier.py`) | ✅ Complete |
+| 4 | ML Severe Class-Imbalance Stress Tester (`ml_stress_tester.py`) | ✅ Complete |
+| 5 | Active Online Reinforcement Learning Engine (`active_learning_engine.py`) | ✅ Complete |
+| 6 | Ayushman Bharat Digital Mission (ABDM) FHIR Bridge (`abdm_connector.py`) | ✅ Complete |
+| 7 | Multi-Department Role-Based Alert Router (`department_router.py`) | ✅ Complete |
+| 8 | Clinical Guideline RAG Engine (KDIGO 2024, ADA 2024, ACC/AHA 2023) | ✅ Complete |
+| 9 | Episode-Aware Alert Consolidator & Care Bundler | ✅ Complete |
+| 10 | LangGraph 1.2 6-Node State Machine with HITL Interrupt | ✅ Complete |
+| 11 | Real-Time 3-Stage Event Vetting Pipeline | ✅ Complete |
+| 12 | Live OpenFDA Drug Safety API Integration with Offline Fallback | ✅ Complete |
+| 13 | SQLite Clinical Persistent Store (8 Normalized Tables) | ✅ Complete |
+| 14 | Granular HITL Cognitive Latency & Ergonomics Telemetry | ✅ Complete |
+| 15 | Synthea FHIR MCC Synthetic Patient Cohort (N=100) | ✅ Complete |
+| 16 | Three Operational Failure Mode Simulators (Edge Cases) | ✅ Complete |
+| 17 | Automated PyTest CI Test Suite (14 Tests, 100% Passed) | ✅ Complete |
+| 18 | N=100 Statistical Benchmark Studio with Confusion Matrix | ✅ Complete |
+| 19 | REST API Backend Server (Python 3.12, 18 Endpoints) | ✅ Complete |
+| 20 | Full Interactive Web Workstation Frontend (9 Tabs, Dark Mode) | ✅ Complete |
+| 21 | Architecture, FHIR Schema, Risk Register, User Guide, Review Reports | ✅ Complete |
 
 ---
 

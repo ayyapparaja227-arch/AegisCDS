@@ -4,6 +4,7 @@ Hardcoded, non-negotiable physiological and pharmacological boundary rules that 
 Guarantees 100% sensitivity for life-critical clinical emergencies.
 """
 
+import time
 from typing import List, Tuple, Optional, Dict, Any
 from .models import ClinicalAlert, Patient, AlertPriority, AlertStatus, AlertCategory
 
@@ -116,3 +117,59 @@ class DeterministicSafetyGate:
             )
 
         return (False, None, None)
+
+    def evaluate(self, patient: Patient) -> List[ClinicalAlert]:
+        """Scans patient observations and active medications, returning any deterministic emergency alerts."""
+        alerts = []
+        now_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+        # 1. Potassium and Blood Pressure
+        for obs in patient.recent_observations:
+            if obs.code in ["K+", "Potassium", "6298-4", "2823-3"] and obs.value >= self.CRITICAL_K_HIGH:
+                alerts.append(ClinicalAlert(
+                    id=f"ALT-CRIT-{obs.id}",
+                    patient_id=patient.id,
+                    category=AlertCategory.DRUG_INTERACTION,
+                    raw_priority=AlertPriority.CRITICAL,
+                    title=f"CRITICAL PHYSIOLOGICAL HAZARD: Severe Hyperkalemia (Serum K+ = {obs.value} {obs.unit})",
+                    description=f"Severe potassium elevation (measured {obs.value} {obs.unit}, normal {obs.reference_range}). High risk of fatal cardiac arrhythmia.",
+                    trigger_rule="SAFETY_GATE_K_MAX",
+                    timestamp=now_str,
+                    is_critical_safety_bypass=True,
+                    status=AlertStatus.ACTIVE_CRITICAL
+                ))
+            
+            if (obs.code in ["BP_Systolic", "8480-6", "Systolic", "SBP"] or "systolic" in obs.display.lower()) and obs.value >= self.CRITICAL_SBP_MAX:
+                alerts.append(ClinicalAlert(
+                    id=f"ALT-CRIT-{obs.id}",
+                    patient_id=patient.id,
+                    category=AlertCategory.LAB_ABNORMALITY,
+                    raw_priority=AlertPriority.CRITICAL,
+                    title=f"CRITICAL HYPERTENSIVE CRISIS: Systolic BP = {obs.value} mmHg",
+                    description=f"Systolic blood pressure exceeds emergency threshold (>= {self.CRITICAL_SBP_MAX} mmHg).",
+                    trigger_rule="SAFETY_GATE_SBP_MAX",
+                    timestamp=now_str,
+                    is_critical_safety_bypass=True,
+                    status=AlertStatus.ACTIVE_CRITICAL
+                ))
+
+        # 2. Lethal DDI
+        med_names = [m.medication_name.lower() for m in patient.active_medications]
+        for drug_a, drug_b in self.LETHAL_INTERACTIONS:
+            has_a = any(drug_a in m for m in med_names)
+            has_b = any(drug_b in m for m in med_names)
+            if has_a and has_b:
+                alerts.append(ClinicalAlert(
+                    id=f"ALT-CRIT-DDI-{drug_a}",
+                    patient_id=patient.id,
+                    category=AlertCategory.CONTRAINDICATION,
+                    raw_priority=AlertPriority.CRITICAL,
+                    title=f"CRITICAL CONTRAINDICATION: Lethal Combination ({drug_a.capitalize()} + {drug_b.capitalize()})",
+                    description=f"Black Box contraindicated co-administration of {drug_a} and {drug_b}.",
+                    trigger_rule="SAFETY_GATE_LETHAL_DDI",
+                    timestamp=now_str,
+                    is_critical_safety_bypass=True,
+                    status=AlertStatus.ACTIVE_CRITICAL
+                ))
+
+        return alerts

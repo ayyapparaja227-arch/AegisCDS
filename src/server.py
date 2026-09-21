@@ -27,6 +27,10 @@ from src.engine.langgraph_workflow import LangGraphClinicalEngine
 from src.engine.database import ClinicalDatabase
 from src.engine.data_fetcher import ClinicalDataFetcher
 from src.engine.event_vetting_engine import EventVettingEngine
+from src.engine.ml_stress_tester import MLStressTester
+from src.engine.active_learning_engine import ActiveOnlineLearningEngine
+from src.engine.abdm_connector import ABDMConnector
+from src.engine.department_router import DepartmentRouter
 
 PORT = 8080
 PUBLIC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public"))
@@ -37,6 +41,10 @@ consolidator = AlertConsolidator()
 evaluator = ExperimentEvaluator()
 langgraph_engine = LangGraphClinicalEngine()
 vetting_engine = EventVettingEngine(db)
+stress_tester = MLStressTester()
+active_learning_engine = ActiveOnlineLearningEngine(db)
+abdm_connector = ABDMConnector()
+department_router = DepartmentRouter()
 
 # Seed database with initial patients
 p1, _ = get_patient_robert_chen()
@@ -93,12 +101,13 @@ class ClinicalRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._send_json({
                 "status": "ONLINE",
                 "system_name": "AegisCDS Outpatient Alert Fatigue Engine",
-                "version": "2.5.0-Enterprise",
-                "frameworks": ["LangGraph 1.2", "LangChain Core 1.6", "Scikit-Learn Calibrated GBDT", "XGBoost 3.4"],
+                "version": "2.8.0-Enterprise (75% Milestone Complete)",
+                "frameworks": ["LangGraph 1.2", "LangChain Core 1.6", "Scikit-Learn Calibrated GBDT", "XGBoost 3.4", "ABDM Indian FHIR R4"],
                 "live_event_vetting_pipeline": "ACTIVE (3-Stage Validation: Temporal -> Safety -> ML/RAG)",
                 "database_backend": "SQLite Embedded Clinical Store (data/aegis_clinic.db)",
                 "openfda_integration": "ACTIVE (Live FDA Drug Label REST Client with Fallback)",
-                "hitl_approval_mode": "ACTIVE (Human-in-the-Loop Interlock)",
+                "hitl_approval_mode": "ACTIVE (Human-in-the-Loop Interlock with Cognitive Telemetry)",
+                "active_learning_mode": "ONLINE (Reinforcement from Doctor Overrides)",
                 "server_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             })
             return
@@ -212,7 +221,45 @@ class ClinicalRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._send_json(cached_benchmark)
             return
 
-        # 8. Audit Trail Query
+        # 8. ML Calibration & Imbalance Stress-Test
+        if path == "/api/ml/stress-test":
+            stress_results = stress_tester.run_stress_test()
+            self._send_json(stress_results)
+            return
+
+        # 9. Granular Cognitive Latency & Telemetry Stats
+        if path == "/api/telemetry/stats":
+            self._send_json(db.get_telemetry_stats())
+            return
+
+        # 10. Active Online Learning Metrics
+        if path == "/api/active-learning/stats":
+            self._send_json(active_learning_engine.get_learning_stats())
+            return
+
+        # 11. Multi-Department Role Streams
+        if path == "/api/department/stream":
+            dept = query.get("dept", ["ALL"])[0].upper()
+            _, alerts_rc = get_patient_robert_chen()
+            _, alerts_ev = get_patient_eleanor_vance()
+            all_alerts = alerts_rc + alerts_ev
+
+            stream_data = []
+            for a in all_alerts:
+                target_dept = department_router.route_alert(a)
+                if dept == "ALL" or dept == target_dept:
+                    a_dict = to_dict(a)
+                    a_dict["assigned_department"] = target_dept
+                    stream_data.append(a_dict)
+
+            self._send_json({
+                "filter_department": dept,
+                "total_alerts": len(stream_data),
+                "alerts": stream_data
+            })
+            return
+
+        # 12. Audit Trail Query
         if path == "/api/audit-log":
             with db._get_connection() as conn:
                 cursor = conn.cursor()
@@ -288,6 +335,16 @@ class ClinicalRequestHandler(http.server.SimpleHTTPRequestHandler):
             }
             db.record_audit_override(audit_entry)
 
+            # Online Active Learning update if overridden
+            if decision in ["OVERRIDE", "OVERRIDDEN"]:
+                active_learning_engine.process_clinician_feedback(
+                    override_id=audit_entry["id"],
+                    patient_id=resumed_state["patient"]["id"],
+                    bundle_id=payload.get("bundle_id", "BUNDLE-ALL"),
+                    override_reason=reason,
+                    clinical_justification=payload.get("clinical_justification", "")
+                )
+
             self._send_json({
                 "success": True,
                 "resumed_state": {
@@ -297,6 +354,36 @@ class ClinicalRequestHandler(http.server.SimpleHTTPRequestHandler):
                 },
                 "audit_entry": audit_entry
             })
+            return
+
+        # Granular HITL Telemetry Ingestion (Cognitive Latency & Click Burden)
+        if path == "/api/telemetry/hitl":
+            db.record_hitl_telemetry(payload)
+            self._send_json({
+                "status": "TELEMETRY_LOGGED",
+                "telemetry_id": payload.get("id"),
+                "cognitive_latency_ms": payload.get("cognitive_latency_ms"),
+                "click_count": payload.get("click_count")
+            })
+            return
+
+        # Active Learning Feedback Submission
+        if path == "/api/active-learning/feedback":
+            res = active_learning_engine.process_clinician_feedback(
+                override_id=payload.get("override_id", f"OVR-{int(time.time()*1000)%100000}"),
+                patient_id=payload.get("patient_id", "PAT-001"),
+                bundle_id=payload.get("bundle_id", "BND-01"),
+                override_reason=payload.get("override_reason", "Stable combination"),
+                clinical_justification=payload.get("clinical_justification", "")
+            )
+            self._send_json(res)
+            return
+
+        # ABDM Indian Health Account Verification (ABHA ID)
+        if path == "/api/abdm/verify":
+            abha_id = payload.get("abha_id", "91-4829-1029-4820")
+            res = abdm_connector.verify_abha_id(abha_id)
+            self._send_json(res)
             return
 
         # Operational Edge Case Simulation
