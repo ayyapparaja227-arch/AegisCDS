@@ -184,3 +184,45 @@ class ExperimentEvaluator:
                 ]
             }
         }
+
+    def export_benchmark_to_csv(self, benchmark_data: Dict[str, Any] = None) -> str:
+        """Exports benchmark metrics, KPIs, and confusion matrix as a formatted CSV string."""
+        import csv
+        import io
+        if benchmark_data is None:
+            benchmark_data = self.run_benchmark_experiment()
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        # 1. Header & Cohort Summary
+        writer.writerow(["AEGISCDS CLINICAL DECISION SUPPORT BENCHMARK REPORT"])
+        writer.writerow(["Milestone", "v3.0.0-Enterprise (100% Final Review Complete)"])
+        writer.writerow([])
+        writer.writerow(["--- COHORT SUMMARY ---"])
+        summary = benchmark_data.get("cohort_summary", {})
+        for k, v in summary.items():
+            writer.writerow([k, v])
+
+        # 2. Confusion Matrix
+        writer.writerow([])
+        writer.writerow(["--- CONFUSION MATRIX ---"])
+        cm = benchmark_data.get("confusion_matrix", {})
+        for k, v in cm.items():
+            writer.writerow([k, v])
+
+        # 3. KPI Comparison
+        writer.writerow([])
+        writer.writerow(["--- KPI PERFORMANCE COMPARISON ---"])
+        writer.writerow(["Metric", "Baseline EHR", "Target", "Measured AegisCDS", "Achievement", "Status"])
+        for kpi in benchmark_data.get("kpi_comparison", []):
+            writer.writerow([
+                kpi.get("metric", ""),
+                kpi.get("baseline", ""),
+                kpi.get("target", ""),
+                kpi.get("measured", ""),
+                kpi.get("achievement", ""),
+                kpi.get("status", "")
+            ])
+
+        return output.getvalue()

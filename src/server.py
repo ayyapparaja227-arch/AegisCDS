@@ -84,6 +84,16 @@ class ClinicalRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _send_csv(self, csv_data: str, filename: str = "aegiscds_benchmark_metrics.csv"):
+        body = csv_data.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/csv; charset=utf-8")
+        self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -97,11 +107,52 @@ class ClinicalRequestHandler(http.server.SimpleHTTPRequestHandler):
         query = urllib.parse.parse_qs(parsed.query)
 
         # 1. System Health & Metadata
+        if path.startswith("/api/v1/abdm/consent/"):
+            # Extract ABHA ID from URL
+            abha_id = path.split('/')[-1]
+            connector = ABDMConnector()
+            result = connector.verify_abha_id(abha_id)
+            if result.get("status") != "VERIFIED":
+                self._send_json({"error": result.get("error", "ABHA not found")}, status=404)
+            else:
+                self._send_json(result)
+            return
+
+        if path == "/api/v1/abdm/consent/{abha_id}":
+            # Extract ABHA ID from URL (handled above)
+            pass
+
+        # New endpoint: Department stats
+        if path == "/api/v1/department/stats":
+            # Simple aggregation using recent vetted events and router
+            stats = {"PHYSICIAN": 0, "NURSING": 0, "PHARMACY": 0, "LABORATORY": 0}
+            for ev in recent_vetted_events:
+                # Build a minimal ClinicalAlert-like dict for routing
+                class DummyAlert:
+                    def __init__(self, title, description, raw_priority):
+                        self.title = title
+                        self.description = description
+                        self.raw_priority = raw_priority
+                alert = DummyAlert(ev.get("title", ""), ev.get("description", ""), ev.get("raw_priority", None))
+                dept = department_router.route_alert(alert)
+                if dept in stats:
+                    stats[dept] += 1
+            self._send_json(stats)
+            return
+
+        if path == "/api/v1/rl/status":
+            # Return health and current online learning weights
+            self._send_json({
+                "status": "ONLINE",
+                "current_weights": active_learning_engine.current_weights
+            })
+            return
+
         if path == "/api/status":
             self._send_json({
                 "status": "ONLINE",
                 "system_name": "AegisCDS Outpatient Alert Fatigue Engine",
-                "version": "2.8.0-Enterprise (75% Milestone Complete)",
+                "version": "3.0.0-Enterprise (100% Final Review Complete)",
                 "frameworks": ["LangGraph 1.2", "LangChain Core 1.6", "Scikit-Learn Calibrated GBDT", "XGBoost 3.4", "ABDM Indian FHIR R4"],
                 "live_event_vetting_pipeline": "ACTIVE (3-Stage Validation: Temporal -> Safety -> ML/RAG)",
                 "database_backend": "SQLite Embedded Clinical Store (data/aegis_clinic.db)",
@@ -219,6 +270,12 @@ class ClinicalRequestHandler(http.server.SimpleHTTPRequestHandler):
         # 7. Benchmark Cohort Results
         if path == "/api/benchmark":
             self._send_json(cached_benchmark)
+            return
+
+        # 7b. Benchmark CSV Export
+        if path == "/api/benchmark/export-csv":
+            csv_data = evaluator.export_benchmark_to_csv(cached_benchmark)
+            self._send_csv(csv_data, filename="aegiscds_benchmark_metrics.csv")
             return
 
         # 8. ML Calibration & Imbalance Stress-Test

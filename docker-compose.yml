@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  aegiscds:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - ENV=development
+    depends_on:
+      - db
+  db:
+    image: sqlite3:latest
+    # For simplicity we use a persisted volume
+    volumes:
+      - ./data:/data
+    command: "sqlite3 /data/aegis_clinic.db"
+

@@ -106,6 +106,9 @@ function initNavigation() {
       if (targetView === "telemetry-dashboard") {
         loadTelemetryStats();
       }
+      if (targetView === "dept-dashboard") {
+        loadDeptDashboard();
+      }
     });
   });
 }
@@ -1028,5 +1031,64 @@ function initABDMVerification() {
     });
   }
 }
+
+/* ==========================================================================
+   Multi-Department Role Dashboard Loader
+   ========================================================================== */
+async function loadDeptDashboard() {
+  try {
+    const statsRes = await fetch("/api/v1/department/stats");
+    if (statsRes.ok) {
+      const stats = await statsRes.json();
+      const pEl = document.getElementById("dept-count-physician");
+      const nEl = document.getElementById("dept-count-nursing");
+      const rxEl = document.getElementById("dept-count-pharmacy");
+      const lEl = document.getElementById("dept-count-lab");
+      if (pEl) pEl.textContent = stats.PHYSICIAN || 0;
+      if (nEl) nEl.textContent = stats.NURSING || 0;
+      if (rxEl) rxEl.textContent = stats.PHARMACY || 0;
+      if (lEl) lEl.textContent = stats.LABORATORY || 0;
+    }
+
+    const filterEl = document.getElementById("select-dept-filter");
+    const filterVal = filterEl ? filterEl.value : "ALL";
+    const streamRes = await fetch(`/api/department/stream?dept=${filterVal}`);
+    if (streamRes.ok) {
+      const streamData = await streamRes.json();
+      const tbody = document.getElementById("dept-stream-tbody");
+      if (tbody) {
+        if (!streamData || streamData.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:16px; color:var(--text-secondary);">No active tasks in this queue.</td></tr>`;
+        } else {
+          tbody.innerHTML = streamData.map(item => `
+            <tr>
+              <td><code>${item.id || item.alert_id || 'TSK-01'}</code></td>
+              <td><span class="kpi-badge badge-${item.target_department === 'PHYSICIAN' ? 'danger' : item.target_department === 'NURSING' ? 'primary' : item.target_department === 'PHARMACY' ? 'warning' : 'info'}">${item.target_department}</span></td>
+              <td>${item.patient_name || 'Patient'}</td>
+              <td><strong>${item.title}</strong><br><small style="color:var(--text-secondary);">${item.description || ''}</small></td>
+              <td>${Array.isArray(item.suggested_orders) ? item.suggested_orders.join(', ') : (item.suggested_orders || 'Review required')}</td>
+              <td><span class="pill-tag">${item.priority || 'STANDARD'}</span></td>
+            </tr>
+          `).join('');
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Failed loading department dashboard:", err);
+  }
+}
+
+// Bind department dashboard refresh and filter
+document.addEventListener("DOMContentLoaded", () => {
+  const btnRefreshDept = document.getElementById("btn-refresh-dept-stats");
+  if (btnRefreshDept) {
+    btnRefreshDept.addEventListener("click", loadDeptDashboard);
+  }
+  const selectFilter = document.getElementById("select-dept-filter");
+  if (selectFilter) {
+    selectFilter.addEventListener("change", loadDeptDashboard);
+  }
+});
+
 
 

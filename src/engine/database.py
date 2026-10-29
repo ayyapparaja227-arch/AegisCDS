@@ -28,7 +28,9 @@ class ClinicalDatabase:
         return conn
 
     def _init_schema(self):
-        """Initializes tables for clinical events, vetted bundles, and audit trails."""
+        """Initializes tables for clinical events, vetted bundles, and audit trails.
+        Also creates tables for active learning weights and RL feedback.
+        """
         with self._get_connection() as conn:
             cursor = conn.cursor()
 
@@ -46,7 +48,7 @@ class ClinicalDatabase:
                 )
             """)
 
-            # 2. Observations (Labs & Vitals)
+            # 2. Observations (Labs \& Vitals)
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS observations (
                     id TEXT PRIMARY KEY,
@@ -126,7 +128,7 @@ class ClinicalDatabase:
                 )
             """)
 
-            # 7. Granular HITL Interaction Telemetry (Cognitive Latency & Click Burden)
+            # 7. Granular HITL Interaction Telemetry (Cognitive Latency \& Click Burden)
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS hitl_interaction_telemetry (
                     id TEXT PRIMARY KEY,
@@ -152,6 +154,19 @@ class ClinicalDatabase:
                     feature_name TEXT NOT NULL,
                     weight_value REAL NOT NULL,
                     updated_from_override_id TEXT,
+                    timestamp TEXT NOT NULL
+                )
+            """)
+
+            # 9. Online Reinforcement Learning Feedback Table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS rl_feedback (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    override_id TEXT NOT NULL,
+                    patient_id TEXT NOT NULL,
+                    bundle_id TEXT NOT NULL,
+                    override_reason TEXT NOT NULL,
+                    clinical_justification TEXT,
                     timestamp TEXT NOT NULL
                 )
             """)
@@ -345,6 +360,30 @@ class ClinicalDatabase:
             """, (feature_name, weight_value, override_id, time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())))
             conn.commit()
 
+    def record_rl_feedback(self, override_id: str, patient_id: str, bundle_id: str, override_reason: str, clinical_justification: str = "") -> int:
+        """Records a clinician override feedback entry for the online RL loop."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO rl_feedback (override_id, patient_id, bundle_id, override_reason, clinical_justification, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (override_id, patient_id, bundle_id, override_reason, clinical_justification, time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())))
+            conn.commit()
+            return cursor.lastrowid
+
+    def fetch_new_rl_feedback(self, since_id: int = 0) -> List[Dict[str, Any]]:
+        """Fetches unprocessed reinforcement learning feedback rows."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, override_id, patient_id, bundle_id, override_reason, clinical_justification, timestamp
+                FROM rl_feedback
+                WHERE id > ?
+                ORDER BY id ASC
+            """, (since_id,))
+            rows = cursor.fetchall()
+            return [dict(r) for r in rows]
+
     def get_db_stats(self) -> Dict[str, int]:
         """Returns row counts across all clinical tables."""
         with self._get_connection() as conn:
@@ -352,7 +391,8 @@ class ClinicalDatabase:
             stats = {}
             for table in [
                 "patients", "observations", "prescriptions", "raw_clinical_events",
-                "vetted_care_bundles", "override_audit_trail", "hitl_interaction_telemetry", "active_learning_weights"
+                "vetted_care_bundles", "override_audit_trail", "hitl_interaction_telemetry",
+                "active_learning_weights", "rl_feedback"
             ]:
                 cursor.execute(f"SELECT COUNT(*) FROM {table}")
                 stats[table] = cursor.fetchone()[0]

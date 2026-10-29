@@ -115,6 +115,11 @@
         <span class="tab-label">ABDM Indian FHIR Bridge</span>
         <span class="tab-badge safe">ABHA Ready</span>
       </button>
+      <button class="nav-tab" data-view="dept-dashboard">
+        <span class="tab-icon">🏢</span>
+        <span class="tab-label">Multi-Dept Routing</span>
+        <span class="tab-badge info">4 Streams</span>
+      </button>
       <button class="nav-tab" data-view="evidence-rag">
         <span class="tab-icon">📚</span>
         <span class="tab-label">Guideline RAG Explorer</span>
@@ -508,6 +513,9 @@
           <p class="view-desc">Quantitative comparison: Legacy EHR Baseline vs. Target Benchmark vs. Measured Prototype Results.</p>
         </div>
         <div class="view-actions">
+          <a class="btn btn-primary" id="btn-export-csv" href="/api/benchmark/export-csv" download="aegiscds_benchmark_metrics.csv" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+            <span>📥 Export Benchmark CSV</span>
+          </a>
           <button class="btn btn-secondary" id="btn-refresh-benchmark">↻ Re-Run Cohort Benchmark</button>
         </div>
       </div>
@@ -711,6 +719,86 @@
           </thead>
           <tbody id="audit-table-body">
             <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- VIEW 7: Multi-Department Role Streams & Routing Dashboard -->
+    <section class="view-panel" id="view-dept-dashboard">
+      <div class="view-header">
+        <div>
+          <h2>Multi-Department Role-Based Routing & Workstation</h2>
+          <p class="view-desc">Automatic triage and routing of clinical decisions across Physician, Nursing, Pharmacy, and Laboratory queues.</p>
+        </div>
+        <div class="view-actions">
+          <button class="btn btn-secondary" id="btn-refresh-dept-stats">↻ Refresh Department Queues</button>
+        </div>
+      </div>
+
+      <!-- Department Queue Counter Cards -->
+      <div class="kpi-cards-grid">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-title">Physician Stream</span>
+            <span class="kpi-badge badge-danger">High Severity</span>
+          </div>
+          <div class="kpi-main-val" id="dept-count-physician">0</div>
+          <div class="kpi-desc">Critical safety gates, contraindications, and therapy decisions.</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-title">Nursing Stream</span>
+            <span class="kpi-badge badge-primary">Care Delivery</span>
+          </div>
+          <div class="kpi-main-val" id="dept-count-nursing">0</div>
+          <div class="kpi-desc">Preventive exams, immunizations, and vital monitoring.</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-title">Pharmacy Stream</span>
+            <span class="kpi-badge badge-warning">Med Management</span>
+          </div>
+          <div class="kpi-main-val" id="dept-count-pharmacy">0</div>
+          <div class="kpi-desc">Refills, DDI titration, and contraindication review.</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-title">Laboratory Stream</span>
+            <span class="kpi-badge badge-info">Diagnostics</span>
+          </div>
+          <div class="kpi-main-val" id="dept-count-lab">0</div>
+          <div class="kpi-desc">Panic values, stale lab orders, and STAT repeat draws.</div>
+        </div>
+      </div>
+
+      <!-- Department Live Stream Queue Table -->
+      <div class="audit-table-card" style="margin-top: 24px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="font-size:16px; font-weight:600; color:var(--text-primary);">Role-Based Task Dispatch Queue</h3>
+          <div style="display:flex; gap:8px;">
+            <select id="select-dept-filter" class="form-select" style="background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border-color); padding:6px 12px; border-radius:6px;">
+              <option value="ALL">All Departments</option>
+              <option value="PHYSICIAN">Physician Queue</option>
+              <option value="NURSING">Nursing Queue</option>
+              <option value="PHARMACY">Pharmacy Queue</option>
+              <option value="LABORATORY">Laboratory Queue</option>
+            </select>
+          </div>
+        </div>
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Alert / Task ID</th>
+              <th>Target Department</th>
+              <th>Patient</th>
+              <th>Clinical Summary</th>
+              <th>Assigned Orders / Actions</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody id="dept-stream-tbody">
+            <!-- Dynamically populated via /api/department/stream -->
           </tbody>
         </table>
       </div>

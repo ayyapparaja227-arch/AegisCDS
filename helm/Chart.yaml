@@ -1,0 +1,7 @@
+apiVersion: v2
+name: aegiscds
+description: Helm chart for AegisCDS Clinical Decision Support System
+type: application
+version: 0.1.0
+appVersion: "3.0.0"
+
