@@ -123,8 +123,24 @@ Doctor clicks once. Done in 10 seconds. She spends the remaining 14 minutes actu
 │  │  • prescriptions    │   │  • LangGraph State Visualizer                 │ │
 │  │  • raw_events       │   │  • HITL Human Review & Override Modal         │ │
 │  │  • vetted_bundles   │   │  • Failure Mode & Edge Case Simulator         │ │
-│  │  • audit_trail      │   │  • N=100 Benchmark Studio + Confusion Matrix  │ │
+│  │  • audit_trail      │   │  • N=100 Benchmark Studio + CSV Export        │ │
+│  │  • rl_feedback      │   │  • ML Calibration & Stress-Test Studio        │ │
+│  │  • active_weights   │   │  • Cognitive Telemetry Dashboard              │ │
+│  │  • hitl_telemetry   │   │  • Multi-Department Routing Workstation       │ │
+│  │                     │   │  • ABDM Indian FHIR Bridge                    │ │
+│  │                     │   │  • Guideline RAG Explorer                     │ │
+│  │                     │   │  • Clinician Audit Trail                      │ │
 │  └─────────────────────┘   └──────────────────────────────────────────────┘ │
+│                                                                              │
+│  DEPLOYMENT & OPERATIONS                                                     │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌────────────────────────────┐ │
+│  │  Dockerfile       │  │  docker-compose  │  │  Helm Chart (K8s)          │ │
+│  │  (Multi-Stage)    │  │  (Local Dev)     │  │  (Staging / Production)    │ │
+│  └──────────────────┘  └──────────────────┘  └────────────────────────────┘ │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌────────────────────────────┐ │
+│  │  GitHub Actions   │  │  RL Daemon       │  │  FDA SaMD Regulatory       │ │
+│  │  CI/CD Pipeline   │  │  (Online Learn)  │  │  Package (DHF/510(k))      │ │
+│  └──────────────────┘  └──────────────────┘  └────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -414,6 +430,17 @@ cd "ap project"
 
 Open browser: **http://localhost:8080**
 
+### Docker Deployment (Alternative)
+
+```bash
+# Build and run with Docker Compose
+docker compose up --build
+
+# Or build standalone
+docker build -t aegiscds:latest .
+docker run -p 8080:8080 -v ./data:/app/data aegiscds:latest
+```
+
 ### What You Will See:
 
 | Tab | What It Does |
@@ -422,9 +449,13 @@ Open browser: **http://localhost:8080**
 | 📡 Live Event Vetting & Stream | Inject real-time clinic events through the 3-stage pipeline. Query live OpenFDA API. |
 | 🔄 LangGraph & HITL Workflow | Interactive state machine visualizer + Doctor approval modal |
 | 🛡️ Failure Mode & Edge Lab | Simulate all 3 operational failure scenarios |
-| 📊 Benchmark Studio | N=100 experiment results, confusion matrix, KPI comparison table |
-| 📖 Guideline Explorer | KDIGO 2024, ADA 2024, ACC/AHA 2023 evidence base |
-| 📋 Clinician Audit Trail | Every doctor decision logged to SQLite — full medico-legal record |
+| 📊 Benchmark Studio | N=100 experiment results, confusion matrix, KPI comparison + **CSV Export** |
+| 📈 ML Calibration Studio | Stress-test classifier under severe class imbalance (95–98% noise) |
+| ⚡ Cognitive Telemetry | Real-time HITL decision latency, click burden metrics |
+| 🏢 Multi-Dept Routing | Per-department alert queue view (Physician, Nursing, Pharmacy, Lab) |
+| 🇮🇳 ABDM Indian FHIR Bridge | Verify ABHA IDs, generate consent tokens, FHIR R4 bundle exchange |
+| 📚 Guideline RAG Explorer | KDIGO 2024, ADA 2024, ACC/AHA 2023 evidence base |
+| 📝 Clinician Audit Trail | Every doctor decision logged to SQLite — full medico-legal record |
 
 ---
 
@@ -442,7 +473,15 @@ Open browser: **http://localhost:8080**
 | `GET` | `/api/db/stats` | SQLite database row counts across all tables |
 | `POST` | `/api/graph/hitl-action` | Submit clinician HITL approval or override |
 | `POST` | `/api/simulate-edge-case` | Trigger a failure mode simulation |
-| `GET` | `/api/benchmark` | Full N=100 experiment results |
+| `GET` | `/api/benchmark` | Full N=100 experiment results (JSON) |
+| `GET` | `/api/benchmark/export-csv` | Download benchmark metrics as CSV file |
+| `GET` | `/api/ml/stress-test` | ML calibration stress-test under class imbalance |
+| `GET` | `/api/telemetry/stats` | Granular HITL cognitive latency & click burden |
+| `GET` | `/api/active-learning/stats` | Online reinforcement learning weight drift metrics |
+| `GET` | `/api/department/stream?dept=X` | Multi-department role-based alert dispatch queue |
+| `GET` | `/api/v1/department/stats` | Per-department alert count aggregation |
+| `GET` | `/api/v1/abdm/consent/:abha_id` | ABDM ABHA ID verification & consent token |
+| `GET` | `/api/v1/rl/status` | Online learning daemon health check & current weights |
 | `GET` | `/api/audit-log` | Full clinician override audit trail |
 
 ---
@@ -469,6 +508,80 @@ Open browser: **http://localhost:8080**
 | [`docs/risk_register.md`](docs/risk_register.md) | FMEA clinical risk register (12 failure modes, severity, mitigation) |
 | [`docs/user_guide.md`](docs/user_guide.md) | End-user operational guide for clinicians and administrators |
 | [`docs/experiment_report.md`](docs/experiment_report.md) | Full N=100 benchmark methodology, results, and error analysis |
+| [`regulatory/DHF.md`](regulatory/DHF.md) | FDA SaMD Design History File (intended use, V&V, traceability) |
+| [`regulatory/risk_analysis.md`](regulatory/risk_analysis.md) | IEC 62304 / ISO 14971 FMEA risk management matrix |
+| [`regulatory/SaMD_Label.md`](regulatory/SaMD_Label.md) | IEC 82304-1 healthcare software labeling & directions for use |
+| [`regulatory/510k_summary.md`](regulatory/510k_summary.md) | 510(k) substantial equivalence & safety summary |
+| [`performance/report_load_test.md`](performance/report_load_test.md) | High-throughput load testing results & SLA compliance |
+
+---
+
+## 🧪 Automated Test Suite
+
+```
+18 passed in 4.54s — 100% pass rate
+```
+
+| Test File | Tests | Coverage |
+|---|---|---|
+| `test_safety_gate.py` | 3 | Deterministic zero-FN invariant enforcement |
+| `test_failure_modes.py` | 3 | Stale lab, over-consolidation, hallucination drift |
+| `test_langgraph_resilience.py` | 3 | State machine recovery & HITL breakpoint pausing |
+| `test_ml_calibration.py` | 2 | Brier score & ECE under 95–98% class imbalance |
+| `test_active_learning_and_abdm.py` | 3 | Online weight update, ABHA verification, dept routing |
+| `test_benchmark_and_endpoints.py` | 4 | CSV export, consent flow, RL feedback, dept stats |
+
+---
+
+## 📦 Project Structure
+
+```
+ap project/
+├── .github/workflows/ci.yml      # GitHub Actions CI/CD pipeline
+├── Dockerfile                     # Multi-stage production container
+├── docker-compose.yml             # Local development orchestration
+├── helm/Chart.yaml                # Kubernetes Helm chart
+├── README.md                      # This file
+├── conftest.py                    # PyTest configuration
+├── data/
+│   └── aegis_clinic.db            # SQLite clinical database (9 tables)
+├── docs/                          # Architecture, FHIR schema, risk register, user guide
+├── performance/
+│   └── report_load_test.md        # Load testing benchmark results
+├── public/
+│   ├── index.html                 # Clinical workstation UI (11 tabs)
+│   ├── app.js                     # Front-end application logic
+│   └── style.css                  # Glassmorphism dark-mode design system
+├── regulatory/
+│   ├── DHF.md                     # Design History File
+│   ├── risk_analysis.md           # IEC 62304 FMEA risk matrix
+│   ├── SaMD_Label.md              # IEC 82304-1 device labeling
+│   └── 510k_summary.md            # Substantial equivalence summary
+├── scripts/
+│   └── load_test.py               # Multi-threaded performance tester
+├── src/
+│   ├── server.py                  # REST API server (22 endpoints)
+│   └── engine/
+│       ├── models.py              # FHIR R4 data models & enums
+│       ├── synthetic_data.py      # Synthea MCC patient cohort generator
+│       ├── data_fetcher.py        # OpenFDA live API + offline cache
+│       ├── deterministic_safety_gate.py  # Layer 1: Zero-FN hard rules
+│       ├── ml_triage_classifier.py       # Layer 2: Calibrated ML scoring
+│       ├── ml_stress_tester.py    # Class-imbalance stress testing
+│       ├── guideline_rag.py       # Clinical guideline RAG engine
+│       ├── alert_consolidator.py  # Episode-aware care bundler
+│       ├── event_vetting_engine.py # 3-stage real-time pipeline
+│       ├── langgraph_workflow.py  # LangGraph 1.2 state machine
+│       ├── database.py            # SQLite persistence (9 tables)
+│       ├── edge_cases.py          # 3 failure mode simulators
+│       ├── experiment_evaluator.py # N=100 benchmark + CSV export
+│       ├── active_learning_engine.py     # Online RL weight updates
+│       ├── active_learning_daemon.py     # Background RL polling daemon
+│       ├── abdm_connector.py      # Indian ABDM FHIR bridge
+│       ├── department_router.py   # Multi-department alert routing
+│       └── api_abdm.py            # ABDM consent API module
+└── tests/                         # 18 automated PyTest cases
+```
 
 ---
 
@@ -477,6 +590,5 @@ MIT License — Built for clinical informatics research and healthcare AI demons
 
 ---
 
-## 🚀 How to Run
-Start the server with: `.venv/bin/python src/server.py 8080`
-Then open your browser to **http://localhost:8080**
+*AegisCDS v3.0.0-Enterprise — 100% Final Review Complete*
+*Project by: Ayyapparaja VJ | IE28 | Sem 5 | COE Growth Project*
