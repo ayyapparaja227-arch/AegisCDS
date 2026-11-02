@@ -817,6 +817,7 @@ For detailed code flow diagrams and assert-level invariant mappings, see [`docs/
 | [`docs/risk_register.md`](docs/risk_register.md) | FMEA clinical risk register (12 failure modes, severity, mitigation) |
 | [`docs/user_guide.md`](docs/user_guide.md) | End-user operational guide for clinicians and administrators |
 | [`docs/experiment_report.md`](docs/experiment_report.md) | Full N=100 benchmark methodology, results, and error analysis |
+| [`docs/review3_submission_report.md`](docs/review3_submission_report.md) | Official 100% Final Review Milestone Submission Report (≤ 8000 chars) |
 | [`regulatory/DHF.md`](regulatory/DHF.md) | FDA SaMD Design History File (intended use, V&V, traceability) |
 | [`regulatory/risk_analysis.md`](regulatory/risk_analysis.md) | IEC 62304 / ISO 14971 FMEA risk management matrix |
 | [`regulatory/SaMD_Label.md`](regulatory/SaMD_Label.md) | IEC 82304-1 healthcare software labeling & directions for use |
