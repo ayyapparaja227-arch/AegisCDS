@@ -23,7 +23,13 @@ class ClinicalDatabase:
         self._init_schema()
 
     def _get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
+        """
+        Establishes thread-safe SQLite connection with WAL mode and foreign key enforcement.
+        Configured with a 30-second timeout to handle high-concurrency ingestion bursts without locking errors.
+        """
+        conn = sqlite3.connect(self.db_path, timeout=30.0)
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA foreign_keys=ON;")
         conn.row_factory = sqlite3.Row
         return conn
 

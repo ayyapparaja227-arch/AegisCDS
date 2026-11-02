@@ -14,12 +14,34 @@ except (ImportError, ValueError):
     from src.engine.models import ClinicalAlert, CareBundle, AlertCategory, AlertPriority
 
 class DepartmentRouter:
-    """Routes alerts and care bundles to the appropriate clinical care team."""
+    """
+    Routes alerts and care bundles to the appropriate clinical care team members.
+    
+    Clinical Justification:
+    Alert fatigue is exacerbated when all notifications are dumped into the physician's inbox.
+    By partitioning recommendations into role-specific streams (Physician, Nursing, Pharmacy, Laboratory),
+    providers only see decisions relevant to their scope of practice.
+    """
 
     ROLES = ["PHYSICIAN", "NURSING", "PHARMACY", "LABORATORY"]
 
     def route_alert(self, alert: ClinicalAlert) -> str:
-        """Determines the target department for a single clinical alert."""
+        """
+        Determines the target department for a single clinical alert.
+        
+        Routing Policy:
+        - Critical Safety Invariants & Life Threats -> PHYSICIAN (Requires immediate medical evaluation)
+        - Preventive Screening & Vitals Overdue     -> NURSING (Within outpatient nurse workflow)
+        - STAT Blood Draws & Laboratory Orders      -> LABORATORY (Phlebotomy and lab triage)
+        - Drug-Drug Interactions & Refill Titration -> PHARMACY (Clinical pharmacist review)
+        - Default Fallback                          -> PHYSICIAN (Fail-safe clinical governance)
+        
+        Parameters:
+            alert (ClinicalAlert): Incoming clinical alert model.
+            
+        Returns:
+            str: One of 'PHYSICIAN', 'NURSING', 'PHARMACY', or 'LABORATORY'.
+        """
         # Critical bypasses and hard safety alerts always go to the physician
         priority_val = getattr(alert, "raw_priority", getattr(alert, "priority", None))
         if priority_val in [AlertPriority.CRITICAL, AlertPriority.HIGH, "CRITICAL", "HIGH"] or "emergency" in alert.title.lower():
@@ -42,7 +64,15 @@ class DepartmentRouter:
         return "PHYSICIAN"
 
     def route_care_bundle(self, bundle: CareBundle) -> Dict[str, Any]:
-        """Categorizes bundle items across departments."""
+        """
+        Categorizes bundle items across departments and determines the primary responsible role.
+        
+        Parameters:
+            bundle (CareBundle): Synthesized multi-order care bundle.
+            
+        Returns:
+            Dict[str, Any]: Routing breakdown with primary department and per-department order lists.
+        """
         title_lower = (bundle.title + " " + bundle.clinical_rationale).lower()
 
         primary_role = "PHYSICIAN"

@@ -58,8 +58,18 @@ class ABDMConnector:
 
     def verify_abha_id(self, abha_identifier: str) -> Dict[str, Any]:
         """
-        Validates ABHA Number (14-digit) or ABHA Address (@abdm).
-        Returns verified patient demographics and HIP consent tokens.
+        Validates ABHA Number (14-digit format: 'XX-XXXX-XXXX-XXXX') or ABHA Address (e.g. 'name@abdm').
+        
+        Error Boundary & Security Context:
+        - Intercepts requests attempting unconsented or non-existent health data access.
+        - Resolves district/state mappings within the Indian National Digital Health Ecosystem.
+        - Issues cryptographic single-use consent tokens compliant with ABDM Milestone 1 (M1) and M2 guidelines.
+        
+        Parameters:
+            abha_identifier (str): 14-digit numeric ABHA ID or alphanumeric @abdm handle.
+            
+        Returns:
+            Dict[str, Any]: Verified demographic payload with consent token, or NOT_FOUND error response.
         """
         clean_id = abha_identifier.strip()
         
